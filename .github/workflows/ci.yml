@@ -41,6 +41,41 @@ jobs:
     - name: Run tests
       run: uv run pytest tests/ -v --tb=short
 
+  test-with-processing:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install R
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y r-base r-base-dev
+
+    - name: Install uv
+      run: pip install uv
+
+    - name: Install all dependencies including processing
+      run: |
+        uv sync --all-extras
+
+    - name: Test processing imports
+      run: |
+        uv run python -c "
+        import neon_tree_classification
+        from neon_tree_classification import NeonCrownDataset
+        print('Core imports successful!')
+        try:
+          import rpy2
+          print('Processing dependencies (rpy2) available!')
+        except ImportError as e:
+          print(f'Processing dependencies not available: {e}')
+        "
+
   lint:
     runs-on: ubuntu-latest
     steps:
