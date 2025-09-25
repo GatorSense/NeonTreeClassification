@@ -37,9 +37,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from neon_tree_classification.core.dataset import NeonCrownDataset
 
 
-DATASET_URL = (
-    "https://www.dropbox.com/scl/fi/v49xi6d7wtetctqphebx0/neon_tree_classification_dataset.zip?rlkey=fb7bz6kd0ckip4u0qd5xdor58&st=dvjyd5ry&dl=1"  
-)
+DATASET_URL = "https://www.dropbox.com/scl/fi/v49xi6d7wtetctqphebx0/neon_tree_classification_dataset.zip?rlkey=fb7bz6kd0ckip4u0qd5xdor58&st=dvjyd5ry&dl=1"
 
 
 def _dataset_exists(dataset_dir: Path) -> bool:
