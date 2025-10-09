@@ -6,10 +6,10 @@ A comprehensive toolkit for multi-modal tree species classification using NEON e
 
 This repository aims to provide an end-to-end solution for tree species classification:
 
-- **Dataset**: Ready-to-use multi-modal tree crown dataset with 167 species (currently available)
-- **Data Processing**: Tools for downloading and processing raw NEON data products (in development)
-- **Classification Models**: Pre-trained models and training pipelines (in development)
-- **DeepForest Integration**: Automated crown detection and classification workflow (planned)
+- [x] **Dataset**: Ready-to-use multi-modal tree crown dataset with 167 species
+- [ ] **Data Processing**: Tools for downloading and processing raw NEON data products
+- [ ] **Classification Models**: Pre-trained models and training pipelines
+- [ ] **DeepForest Integration**: Automated crown detection and classification workflow
 
 ## What's Available Now
 
@@ -94,20 +94,6 @@ uv run python quickstart.py
 - LiDAR: DP3.30015.001 (Canopy Height Model)
 
 For complete dataset documentation, training guides, and advanced usage, see the [docs/](docs/) directory.
-
-## Citation
-
-If you use this dataset in your research, please cite:
-
-```bibtex
-@dataset{neon_tree_classification_2024,
-  title={NEON Multi-Modal Tree Species Classification Dataset},
-  author={[Author Names]},
-  year={2024},
-  publisher={GitHub},
-  url={https://github.com/Ritesh313/NeonTreeClassification}
-}
-```
 
 ## Acknowledgments
 
