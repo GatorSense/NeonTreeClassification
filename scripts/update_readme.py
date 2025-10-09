@@ -2,6 +2,15 @@
 """
 Simple script to update README.md with current dataset statistics using only pandas.
 
+⚠️ NOTE: This script generates the OLD README format with extensive details.
+The current README is simplified and focuses on essentials only.
+Detailed documentation is now in the docs/ directory.
+
+If you need to update statistics in the README, manually update the numbers in:
+- README.md (main statistics)
+- docs/training.md (baseline results)
+- docs/visualization.md (if needed)
+
 Usage:
     python scripts/update_readme.py --csv /path/to/data.csv --readme /path/to/README.md
 """
