@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """
-Simple script to update README.md with current dataset statistics using only pandas.
+⚠️ DEPRECATED: This script generates the old verbose README format.
 
-⚠️ NOTE: This script generates the OLD README format with extensive details.
-The current README is simplified and focuses on essentials only.
+The current README has been simplified (README.md) and focuses on essentials only.
 Detailed documentation is now in the docs/ directory.
 
-If you need to update statistics in the README, manually update the numbers in:
-- README.md (main statistics)
-- docs/training.md (baseline results)
-- docs/visualization.md (if needed)
+This script is kept for reference but should not be used to regenerate the README.
+To update dataset statistics, manually edit:
+- README.md (lines 8-13: main statistics in Dataset Overview section)
+- README.md (lines 113-117: top 5 species in Dataset Details section)
+- README.md (lines 122-126: top 5 sites in Geographic Distribution section)
 
-Usage:
+For maintaining consistency, consider creating a simple stats updater that only
+updates specific statistics in the simplified README rather than regenerating
+the entire file.
+
+Original usage:
     python scripts/update_readme.py --csv /path/to/data.csv --readme /path/to/README.md
 """
 
