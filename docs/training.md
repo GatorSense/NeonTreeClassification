@@ -36,18 +36,18 @@ uv run python examples/train.py \
 
 ## Baseline Results
 
-Preliminary single-modality baseline results for 167-species classification using the `combined` dataset configuration (seed=42, no hyperparameter optimization):
+Single-modality baseline results using the `combined` dataset configuration (47,971 samples, seed=42):
 
-| Modality | Test Accuracy | Model | Notes |
-|----------|---------------|-------|-------|
-| RGB | 53.5% | ResNet | Standard computer vision approach |
-| HSI | 27.3% | Spectral CNN | 369-band hyperspectral data |
-| LiDAR | 11.5% | Structural CNN | Canopy height model |
+| Modality | Test Accuracy | Model | Hyperparameters | Notes |
+|----------|---------------|-------|-----------------|-------|
+| **RGB (Species)** | **75.9%** | ResNetRGB | lr=5e-5, wd=5e-4, bs=256 | 167 species classes, optimized |
+| **RGB (Genus)** | **72.2%** | ResNetRGB | lr=5e-5, wd=5e-4, bs=256 | 60 genus classes, coarser taxonomy |
+| HSI | 27.3% | Spectral CNN | Default params | 369-band hyperspectral data |
+| LiDAR | 11.5% | Structural CNN | Default params | Canopy height model |
 
 **Important Notes:**
-- 167-species classification is inherently challenging
-- These are basic preliminary results with default parameters
-- Significant improvements possible with hyperparameter tuning, data augmentation, and architectural improvements
+- RGB performance achieved through config: lr=5e-5, weight_decay=5e-4, batch_size=256, AdamW optimizer
+- HSI and LiDAR results are preliminary with default parameters - significant improvement expected with optimization
 - Multi-modal fusion is expected to significantly improve performance
 
 ## Reproducing Baseline Results

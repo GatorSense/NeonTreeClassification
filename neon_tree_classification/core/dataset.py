@@ -244,22 +244,47 @@ class NeonCrownDataset(Dataset):
             return
 
         data_species = set(self.data["species"].dropna().unique())
-        mapping_species = set(self.label_to_idx.keys())
+        mapping_labels = set(self.label_to_idx.keys())
 
-        # Check for species in data that are not in mapping
-        missing_in_mapping = data_species - mapping_species
-        if missing_in_mapping:
-            raise ValueError(
-                f"Species in dataset not found in external label mapping: {sorted(missing_in_mapping)}. "
-                f"External mapping has: {sorted(mapping_species)}"
-            )
+        # Check if mapping contains species codes or genus names
+        # If the first mapping key is a species code (all uppercase, short), it's species-level
+        # If it's a genus name (capitalized, longer), it's genus-level
+        sample_label = next(iter(mapping_labels)) if mapping_labels else ""
+        is_genus_mapping = sample_label and sample_label[0].isupper() and sample_label[1:].islower()
+        
+        if is_genus_mapping:
+            # Genus-level mapping: validate that all species have extractable genus
+            if "species_name" not in self.data.columns:
+                raise ValueError(
+                    "Genus-level mapping detected but 'species_name' column not found in data. "
+                    "Cannot extract genus from species names."
+                )
+            
+            # Extract genera from species names and check they're all in mapping
+            data_genera = set(self.data["species_name"].apply(lambda x: str(x).split()[0]).unique())
+            missing_genera = data_genera - mapping_labels
+            if missing_genera:
+                raise ValueError(
+                    f"Genera extracted from dataset not found in external label mapping: {sorted(missing_genera)}. "
+                    f"External mapping has: {sorted(mapping_labels)}"
+                )
+            
+            print(f"✓ Genus-level validation passed: All {len(data_genera)} genera found in mapping")
+        else:
+            # Species-level mapping: check species codes
+            missing_in_mapping = data_species - mapping_labels
+            if missing_in_mapping:
+                raise ValueError(
+                    f"Species in dataset not found in external label mapping: {sorted(missing_in_mapping)}. "
+                    f"External mapping has: {sorted(mapping_labels)}"
+                )
 
-        # Check for species in mapping that are not in data (warning only)
-        missing_in_data = mapping_species - data_species
-        if missing_in_data:
-            print(
-                f"⚠️  Species in external mapping not found in dataset: {sorted(missing_in_data)}"
-            )
+            # Check for species in mapping that are not in data (warning only)
+            missing_in_data = mapping_labels - data_species
+            if missing_in_data:
+                print(
+                    f"⚠️  Species in external mapping not found in dataset: {sorted(missing_in_data)}"
+                )
 
     def _precompute_normalization_stats(self) -> Dict[str, Any]:
         """Pre-compute dataset-wide normalization statistics for global methods."""
@@ -417,7 +442,27 @@ class NeonCrownDataset(Dataset):
 
         # Add label (using "species_idx" to match Lightning module expectations)
         if "species" in row and pd.notna(row["species"]):
-            sample["species_idx"] = self.label_to_idx[row["species"]]
+            # Check if we're using genus-level labels
+            # (external label mapping contains genus names, not species codes)
+            if self.external_label_mapping is not None:
+                # Using external mapping - need to determine if it's genus or species level
+                # Check by seeing if species code exists in mapping
+                if row["species"] in self.label_to_idx:
+                    # Species-level mapping
+                    sample["species_idx"] = self.label_to_idx[row["species"]]
+                else:
+                    # Genus-level mapping - extract genus from species_name
+                    genus = str(row["species_name"]).split()[0]
+                    if genus in self.label_to_idx:
+                        sample["species_idx"] = self.label_to_idx[genus]
+                    else:
+                        raise KeyError(
+                            f"Genus '{genus}' (from species_name '{row['species_name']}') "
+                            f"not found in label mapping. Available genera: {list(self.label_to_idx.keys())[:10]}..."
+                        )
+            else:
+                # Using internal mapping (species codes)
+                sample["species_idx"] = self.label_to_idx[row["species"]]
 
         # Add metadata if requested
         if self.include_metadata:

@@ -6,6 +6,9 @@ Usage examples:
   # Train RGB classifier
   python train.py --modality rgb --model_type resnet --csv_path /path/to/metadata.csv --hdf5_path /path/to/data.h5
 
+  # Train at genus level (60 classes instead of 167 species)
+  python train.py --modality rgb --model_type resnet --taxonomic_level genus --csv_path /path/to/metadata.csv --hdf5_path /path/to/data.h5
+
   # Train HSI classifier with custom params
   python train.py --modality hsi --model_type spectral_cnn --lr 5e-4 --batch_size 16 --csv_path /path/to/metadata.csv --hdf5_path /path/to/data.h5
 
@@ -222,6 +225,18 @@ def main():
     parser.add_argument(
         "--split_seed", type=int, default=42, help="Random seed for splits"
     )
+    parser.add_argument(
+        "--taxonomic_level",
+        type=str,
+        default="species",
+        choices=["species", "genus"],
+        help="Taxonomic level for classification: 'species' (167 classes) or 'genus' (60 classes)",
+    )
+    parser.add_argument(
+        "--use_balanced_sampler",
+        action="store_true",
+        help="Use WeightedRandomSampler for balanced class sampling (recommended for imbalanced datasets)",
+    )
 
     # Reproducibility arguments
     parser.add_argument(
@@ -306,9 +321,11 @@ def main():
     datamodule = NeonCrownDataModule(
         csv_path=args.csv_path,
         hdf5_path=args.hdf5_path,  # Updated parameter name
-        external_test_csv_path=args.external_test_csv,  # NEW: External test support
-        external_test_hdf5_path=args.external_test_hdf5,  # NEW: External test support
+        external_test_csv_path=args.external_test_csv,  # External test support
+        external_test_hdf5_path=args.external_test_hdf5,  # External test support
         modalities=[args.modality],
+        taxonomic_level=args.taxonomic_level,  # Species or genus level
+        use_balanced_sampler=args.use_balanced_sampler,  # Balanced sampling
         split_method=args.split_method,
         use_validation=True,  # Always use validation in this script
         val_ratio=args.val_ratio,

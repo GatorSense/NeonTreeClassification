@@ -14,6 +14,7 @@ __pycache__/
 lightning_logs/
 results_temp_dir/
 .comet.config
+GSoC_2025_Final_Submission.md
 
 # Training outputs
 outputs/

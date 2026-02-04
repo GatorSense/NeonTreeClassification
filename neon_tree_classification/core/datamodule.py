@@ -13,9 +13,10 @@ import pandas as pd
 import torch
 import lightning as L
 from lightning.pytorch import LightningDataModule
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, WeightedRandomSampler
 from sklearn.model_selection import train_test_split
 from typing import List, Optional, Dict, Any, Callable, Tuple
+import warnings
 
 from .dataset import NeonCrownDataset
 
@@ -72,11 +73,13 @@ class NeonCrownDataModule(LightningDataModule):
         include_metadata: bool = False,
         validate_hdf5: bool = True,
         # DataModule-specific parameters
+        taxonomic_level: str = "species",  # "species" or "genus"
         use_validation: bool = True,  # Whether to split validation from training
         val_ratio: float = 0.15,  # Validation split ratio
         test_ratio: float = 0.15,  # Test split ratio
         split_method: str = "random",  # "random", "site", "year"
         split_seed: int = 42,
+        use_balanced_sampler: bool = False,  # Use WeightedRandomSampler for class balance
         # DataLoader parameters
         batch_size: int = 32,
         num_workers: int = 4,
@@ -110,6 +113,7 @@ class NeonCrownDataModule(LightningDataModule):
             validate_hdf5: Validate HDF5 file structure during init
 
             # DataModule parameters
+            taxonomic_level: Classification level - "species" (167 classes) or "genus" (60 classes)
             use_validation: Whether to create validation split
             val_ratio: Validation split ratio
             test_ratio: Test split ratio
@@ -135,6 +139,13 @@ class NeonCrownDataModule(LightningDataModule):
         # External test dataset parameters
         self.external_test_csv_path = external_test_csv_path
         self.external_test_hdf5_path = external_test_hdf5_path
+
+        # Taxonomic level
+        if taxonomic_level not in ["species", "genus"]:
+            raise ValueError(
+                f"taxonomic_level must be 'species' or 'genus', got '{taxonomic_level}'"
+            )
+        self.taxonomic_level = taxonomic_level
 
         # Dataset parameters
         self.dataset_params = {
@@ -164,6 +175,7 @@ class NeonCrownDataModule(LightningDataModule):
         self.test_ratio = test_ratio
         self.split_method = split_method
         self.split_seed = split_seed
+        self.use_balanced_sampler = use_balanced_sampler
 
         # DataLoader parameters
         self.batch_size = batch_size
@@ -460,6 +472,13 @@ class NeonCrownDataModule(LightningDataModule):
             self.csv_path, self.external_test_csv_path
         )
 
+        # Extract label mapping based on taxonomic level
+        if self.taxonomic_level == "genus":
+            print(f"📊 Extracting genus-level labels from training data...")
+            label_to_idx = self._create_genus_label_mapping()
+            self.dataset_params["label_to_idx"] = label_to_idx
+            print(f"   Found {len(label_to_idx)} unique genera")
+
         # Create training dataset (full species set from training CSV)
         print("Creating training dataset...")
         train_dataset_params = self.dataset_params.copy()
@@ -502,6 +521,13 @@ class NeonCrownDataModule(LightningDataModule):
         """Setup DataModule with single dataset (current behavior)."""
         print("🔧 Setting up single dataset mode...")
 
+        # Extract label mapping based on taxonomic level
+        if self.taxonomic_level == "genus":
+            print(f"📊 Extracting genus-level labels from species names...")
+            label_to_idx = self._create_genus_label_mapping()
+            self.dataset_params["label_to_idx"] = label_to_idx
+            print(f"   Found {len(label_to_idx)} unique genera")
+
         # Create full dataset
         print("Creating full dataset...")
         self.full_dataset = NeonCrownDataset(**self.dataset_params)
@@ -527,10 +553,20 @@ class NeonCrownDataModule(LightningDataModule):
         if self.train_dataset is None:
             raise RuntimeError("Training dataset not available. Call setup() first.")
 
+        # Compute sampler if balanced sampling is enabled
+        sampler = None
+        shuffle = True
+        
+        if self.use_balanced_sampler:
+            print("⚖️  Using WeightedRandomSampler for balanced class sampling")
+            sampler = self._create_weighted_sampler()
+            shuffle = False  # Can't use shuffle with sampler
+        
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
-            shuffle=True,  # Always shuffle training data
+            shuffle=shuffle,
+            sampler=sampler,
             num_workers=self.num_workers,
             pin_memory=self.pin_memory,
             persistent_workers=self.persistent_workers and self.num_workers > 0,
@@ -573,6 +609,61 @@ class NeonCrownDataModule(LightningDataModule):
             worker_init_fn=self.worker_init_fn if self.num_workers > 0 else None,
         )
 
+    def _create_weighted_sampler(self) -> WeightedRandomSampler:
+        """
+        Create WeightedRandomSampler for balanced class sampling.
+        
+        Computes sample weights inversely proportional to class frequency,
+        so rare classes are sampled more often and common classes less often.
+        
+        Returns:
+            WeightedRandomSampler for training dataset
+        """
+        # Get training indices and corresponding labels
+        if hasattr(self.train_dataset, "indices"):
+            # Subset dataset
+            train_indices = self.train_dataset.indices
+            train_df = self.full_dataset.data.iloc[train_indices]
+            full_dataset = self.full_dataset
+        else:
+            # Full dataset used for training
+            train_df = self.train_dataset.data
+            full_dataset = self.train_dataset
+
+        # Get label for each sample (handle both species and genus level)
+        if self.taxonomic_level == "genus":
+            # Extract genus from species_name
+            sample_labels = train_df["species_name"].apply(lambda x: str(x).split()[0])
+        else:
+            # Use species codes directly
+            sample_labels = train_df["species"]
+
+        # Count class frequencies
+        class_counts = sample_labels.value_counts().to_dict()
+        
+        # Compute weight for each class (inverse frequency)
+        num_samples = len(sample_labels)
+        class_weights = {
+            cls: num_samples / count for cls, count in class_counts.items()
+        }
+        
+        # Assign weight to each sample based on its class
+        sample_weights = [class_weights[label] for label in sample_labels]
+        sample_weights = torch.DoubleTensor(sample_weights)
+        
+        # Create sampler
+        sampler = WeightedRandomSampler(
+            weights=sample_weights,
+            num_samples=len(sample_weights),
+            replacement=True  # Sample with replacement to oversample rare classes
+        )
+        
+        print(f"   Created sampler for {len(sample_weights)} samples")
+        print(f"   Sample weight range: {sample_weights.min():.3f} - {sample_weights.max():.3f}")
+        
+        return sampler
+
+
     def get_class_weights(self) -> torch.Tensor:
         """
         Calculate class weights for imbalanced datasets.
@@ -599,17 +690,23 @@ class NeonCrownDataModule(LightningDataModule):
             train_df = self.train_dataset.data
             full_dataset = self.train_dataset
 
-        # Count species in training set
-        species_counts = train_df["species"].value_counts()
+        # Count labels in training set (handle both species and genus level)
+        if self.taxonomic_level == "genus":
+            # Extract genus from species_name for each sample
+            sample_labels = train_df["species_name"].apply(lambda x: str(x).split()[0])
+            label_counts = sample_labels.value_counts()
+        else:
+            # Use species codes directly
+            label_counts = train_df["species"].value_counts()
 
         # Calculate inverse frequency weights
         total_samples = len(train_df)
         weights = []
 
         # Ensure weights are in same order as label_to_idx mapping
-        for species_idx in range(full_dataset.num_classes):
-            species_name = full_dataset.idx_to_label[species_idx]
-            count = species_counts.get(species_name, 0)
+        for label_idx in range(full_dataset.num_classes):
+            label_name = full_dataset.idx_to_label[label_idx]
+            count = label_counts.get(label_name, 0)
             if count > 0:
                 weight = total_samples / (full_dataset.num_classes * count)
             else:
@@ -622,6 +719,58 @@ class NeonCrownDataModule(LightningDataModule):
         print(f"   Weight range: {class_weights.min():.3f} - {class_weights.max():.3f}")
 
         return class_weights
+
+    def _create_genus_label_mapping(self) -> Dict[str, int]:
+        """
+        Create genus-level label mapping from species names in the CSV.
+        
+        Extracts genus (first word) from species_name column.
+        
+        Returns:
+            Dictionary mapping genus name to integer index
+        """
+        import warnings
+        
+        # Load CSV to extract species names
+        df = pd.read_csv(self.csv_path)
+        
+        # Apply any filters that were specified
+        if self.dataset_params.get("species_filter"):
+            df = df[df["species"].isin(self.dataset_params["species_filter"])]
+        if self.dataset_params.get("site_filter"):
+            df = df[df["site"].isin(self.dataset_params["site_filter"])]
+        if self.dataset_params.get("year_filter"):
+            df = df[df["year"].isin(self.dataset_params["year_filter"])]
+        
+        # Extract genus from species_name (first word)
+        df["genus"] = df["species_name"].apply(lambda x: str(x).split()[0])
+        
+        # Get unique genera and create mapping
+        unique_genera = sorted(df["genus"].unique())
+        label_to_idx = {genus: idx for idx, genus in enumerate(unique_genera)}
+        
+        # Validate genus names and warn about edge cases
+        non_alpha_genera = [g for g in unique_genera if not g.isalpha()]
+        if non_alpha_genera:
+            warnings.warn(
+                f"Found non-alphabetic genus names: {non_alpha_genera}. "
+                f"These may be unidentified species or family names. "
+                f"Run 'python processing/misc/inspect_labels.py' to review. "
+                f"To exclude, use: species_filter=[...]"
+            )
+        
+        # Check for known family names
+        known_families = {"Pinaceae", "Rosaceae", "Fabaceae", "Asteraceae"}
+        found_families = set(unique_genera) & known_families
+        if found_families:
+            sample_counts = df[df["genus"].isin(found_families)].groupby("genus").size()
+            warnings.warn(
+                f"Found family names treated as genera: {dict(sample_counts)}. "
+                f"These represent unidentified species within that family. "
+                f"See docs/taxonomic_levels.md for more information."
+            )
+        
+        return label_to_idx
 
     def get_dataset_info(self) -> Dict[str, Any]:
         """Get information about the dataset and splits."""

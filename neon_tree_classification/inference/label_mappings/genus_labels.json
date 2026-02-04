@@ -1,0 +1,548 @@
+{
+  "idx_to_genus": {
+    "0": "Abies",
+    "1": "Acer",
+    "2": "Ailanthus",
+    "3": "Alnus",
+    "4": "Amelanchier",
+    "5": "Arctostaphylos",
+    "6": "Betula",
+    "7": "Bourreria",
+    "8": "Bucida",
+    "9": "Bursera",
+    "10": "Calocedrus",
+    "11": "Carpinus",
+    "12": "Carya",
+    "13": "Castanea",
+    "14": "Celtis",
+    "15": "Cercis",
+    "16": "Cornus",
+    "17": "Diospyros",
+    "18": "Fagus",
+    "19": "Fraxinus",
+    "20": "Gleditsia",
+    "21": "Gordonia",
+    "22": "Gymnocladus",
+    "23": "Halesia",
+    "24": "Ilex",
+    "25": "Juglans",
+    "26": "Juniperus",
+    "27": "Larix",
+    "28": "Liquidambar",
+    "29": "Liriodendron",
+    "30": "Maclura",
+    "31": "Magnolia",
+    "32": "Melia",
+    "33": "Metrosideros",
+    "34": "Morus",
+    "35": "Nyssa",
+    "36": "Ostrya",
+    "37": "Oxydendrum",
+    "38": "Picea",
+    "39": "Pinaceae",
+    "40": "Pinus",
+    "41": "Pisonia",
+    "42": "Platanus",
+    "43": "Populus",
+    "44": "Prunus",
+    "45": "Pseudotsuga",
+    "46": "Quercus",
+    "47": "Robinia",
+    "48": "Rosa",
+    "49": "Salix",
+    "50": "Sassafras",
+    "51": "Sideroxylon",
+    "52": "Symphoricarpos",
+    "53": "Taxus",
+    "54": "Thuja",
+    "55": "Tilia",
+    "56": "Triadica",
+    "57": "Tsuga",
+    "58": "Ulmus",
+    "59": "Unknown"
+  },
+  "genus_to_idx": {
+    "Abies": 0,
+    "Acer": 1,
+    "Ailanthus": 2,
+    "Alnus": 3,
+    "Amelanchier": 4,
+    "Arctostaphylos": 5,
+    "Betula": 6,
+    "Bourreria": 7,
+    "Bucida": 8,
+    "Bursera": 9,
+    "Calocedrus": 10,
+    "Carpinus": 11,
+    "Carya": 12,
+    "Castanea": 13,
+    "Celtis": 14,
+    "Cercis": 15,
+    "Cornus": 16,
+    "Diospyros": 17,
+    "Fagus": 18,
+    "Fraxinus": 19,
+    "Gleditsia": 20,
+    "Gordonia": 21,
+    "Gymnocladus": 22,
+    "Halesia": 23,
+    "Ilex": 24,
+    "Juglans": 25,
+    "Juniperus": 26,
+    "Larix": 27,
+    "Liquidambar": 28,
+    "Liriodendron": 29,
+    "Maclura": 30,
+    "Magnolia": 31,
+    "Melia": 32,
+    "Metrosideros": 33,
+    "Morus": 34,
+    "Nyssa": 35,
+    "Ostrya": 36,
+    "Oxydendrum": 37,
+    "Picea": 38,
+    "Pinaceae": 39,
+    "Pinus": 40,
+    "Pisonia": 41,
+    "Platanus": 42,
+    "Populus": 43,
+    "Prunus": 44,
+    "Pseudotsuga": 45,
+    "Quercus": 46,
+    "Robinia": 47,
+    "Rosa": 48,
+    "Salix": 49,
+    "Sassafras": 50,
+    "Sideroxylon": 51,
+    "Symphoricarpos": 52,
+    "Taxus": 53,
+    "Thuja": 54,
+    "Tilia": 55,
+    "Triadica": 56,
+    "Tsuga": 57,
+    "Ulmus": 58,
+    "Unknown": 59
+  },
+  "genus_to_species": {
+    "Abies": [
+      "ABAM",
+      "ABBA",
+      "ABCO",
+      "ABFR",
+      "ABIES",
+      "ABLAL",
+      "ABLO",
+      "ABMA"
+    ],
+    "Acer": [
+      "ACBA3",
+      "ACCI",
+      "ACNE2",
+      "ACNEN",
+      "ACPE",
+      "ACRU",
+      "ACRUR",
+      "ACSA2",
+      "ACSA3",
+      "ACSAS"
+    ],
+    "Ailanthus": [
+      "AIAL"
+    ],
+    "Alnus": [
+      "ALRU2"
+    ],
+    "Amelanchier": [
+      "AMLA"
+    ],
+    "Arctostaphylos": [
+      "ARVIM"
+    ],
+    "Betula": [
+      "BEAL2",
+      "BECAC",
+      "BELE",
+      "BENE4",
+      "BENI",
+      "BEPA",
+      "BEPAP",
+      "BEPO"
+    ],
+    "Bourreria": [
+      "BOSU2"
+    ],
+    "Bucida": [
+      "BUBU"
+    ],
+    "Bursera": [
+      "BUSI"
+    ],
+    "Calocedrus": [
+      "CADE27"
+    ],
+    "Carpinus": [
+      "CACA18"
+    ],
+    "Carya": [
+      "CAAQ2",
+      "CACO15",
+      "CAGL8",
+      "CAIL2",
+      "CAOV2",
+      "CARYA",
+      "CATO6"
+    ],
+    "Castanea": [
+      "CADE12"
+    ],
+    "Celtis": [
+      "CELA",
+      "CELTI",
+      "CEOC"
+    ],
+    "Cercis": [
+      "CECA4",
+      "CECAC"
+    ],
+    "Cornus": [
+      "CODR",
+      "COFL2",
+      "CONU4"
+    ],
+    "Diospyros": [
+      "DIVI5"
+    ],
+    "Fagus": [
+      "FAGR"
+    ],
+    "Fraxinus": [
+      "FRAM2",
+      "FRAXI",
+      "FRNI",
+      "FRPE"
+    ],
+    "Gleditsia": [
+      "GLTR"
+    ],
+    "Gordonia": [
+      "GOLA"
+    ],
+    "Gymnocladus": [
+      "GYDI"
+    ],
+    "Halesia": [
+      "HADI3",
+      "HATE3"
+    ],
+    "Ilex": [
+      "ILMO",
+      "ILOP"
+    ],
+    "Juglans": [
+      "JUNI"
+    ],
+    "Juniperus": [
+      "JUOS",
+      "JUVI"
+    ],
+    "Larix": [
+      "LALA"
+    ],
+    "Liquidambar": [
+      "LIST2"
+    ],
+    "Liriodendron": [
+      "LITU"
+    ],
+    "Maclura": [
+      "MAPO"
+    ],
+    "Magnolia": [
+      "MAAC",
+      "MAFR",
+      "MAMA2"
+    ],
+    "Melia": [
+      "MEAZ"
+    ],
+    "Metrosideros": [
+      "MEPO5"
+    ],
+    "Morus": [
+      "MORU2"
+    ],
+    "Nyssa": [
+      "NYAQ2",
+      "NYBI",
+      "NYSY"
+    ],
+    "Ostrya": [
+      "OSVI"
+    ],
+    "Oxydendrum": [
+      "OXAR"
+    ],
+    "Picea": [
+      "PIAB",
+      "PICEA",
+      "PIEN",
+      "PIGL",
+      "PIMA",
+      "PIRU"
+    ],
+    "Pinaceae": [
+      "PINACE"
+    ],
+    "Pinus": [
+      "PICO",
+      "PICOL",
+      "PIEC2",
+      "PIED",
+      "PIEL",
+      "PIFL2",
+      "PIJE",
+      "PIMO3",
+      "PINUS",
+      "PIPA2",
+      "PIPO",
+      "PIPOS",
+      "PIPU5",
+      "PIRE",
+      "PIRI",
+      "PISA2",
+      "PIST",
+      "PITA",
+      "PIVI2"
+    ],
+    "Pisonia": [
+      "PIAL3"
+    ],
+    "Platanus": [
+      "PLOC"
+    ],
+    "Populus": [
+      "PODE3",
+      "POGR4",
+      "POTR5"
+    ],
+    "Prunus": [
+      "PRAM",
+      "PRME",
+      "PRPEP",
+      "PRSE2",
+      "PRSES"
+    ],
+    "Pseudotsuga": [
+      "PSME",
+      "PSMEM"
+    ],
+    "Quercus": [
+      "QUAL",
+      "QUCH2",
+      "QUCO2",
+      "QUDO",
+      "QUERC",
+      "QUFA",
+      "QUGE2",
+      "QUHE2",
+      "QUKE",
+      "QULA2",
+      "QULA3",
+      "QULY",
+      "QUMA13",
+      "QUMA2",
+      "QUMA3",
+      "QUMI",
+      "QUMO4",
+      "QUMU",
+      "QUNI",
+      "QUPA5",
+      "QUPH",
+      "QURU",
+      "QUSH",
+      "QUST",
+      "QUVE",
+      "QUVI",
+      "QUWI2"
+    ],
+    "Robinia": [
+      "ROPS"
+    ],
+    "Rosa": [
+      "ROMU"
+    ],
+    "Salix": [
+      "SANI"
+    ],
+    "Sassafras": [
+      "SAAL5"
+    ],
+    "Sideroxylon": [
+      "SILA20"
+    ],
+    "Symphoricarpos": [
+      "SYOR"
+    ],
+    "Taxus": [
+      "TABR2"
+    ],
+    "Thuja": [
+      "THOC2",
+      "THPL"
+    ],
+    "Tilia": [
+      "TIAM"
+    ],
+    "Triadica": [
+      "TRSE6"
+    ],
+    "Tsuga": [
+      "TSCA",
+      "TSHE"
+    ],
+    "Ulmus": [
+      "ULAL",
+      "ULAM",
+      "ULCR",
+      "ULMUS",
+      "ULRU"
+    ],
+    "Unknown": [
+      "2PLANT",
+      "2PLANT-S"
+    ]
+  },
+  "genus_to_species_count": {
+    "Abies": 8,
+    "Acer": 10,
+    "Ailanthus": 1,
+    "Alnus": 1,
+    "Amelanchier": 1,
+    "Arctostaphylos": 1,
+    "Betula": 8,
+    "Bourreria": 1,
+    "Bucida": 1,
+    "Bursera": 1,
+    "Calocedrus": 1,
+    "Carpinus": 1,
+    "Carya": 7,
+    "Castanea": 1,
+    "Celtis": 3,
+    "Cercis": 2,
+    "Cornus": 3,
+    "Diospyros": 1,
+    "Fagus": 1,
+    "Fraxinus": 4,
+    "Gleditsia": 1,
+    "Gordonia": 1,
+    "Gymnocladus": 1,
+    "Halesia": 2,
+    "Ilex": 2,
+    "Juglans": 1,
+    "Juniperus": 2,
+    "Larix": 1,
+    "Liquidambar": 1,
+    "Liriodendron": 1,
+    "Maclura": 1,
+    "Magnolia": 3,
+    "Melia": 1,
+    "Metrosideros": 1,
+    "Morus": 1,
+    "Nyssa": 3,
+    "Ostrya": 1,
+    "Oxydendrum": 1,
+    "Picea": 6,
+    "Pinaceae": 1,
+    "Pinus": 19,
+    "Pisonia": 1,
+    "Platanus": 1,
+    "Populus": 3,
+    "Prunus": 5,
+    "Pseudotsuga": 2,
+    "Quercus": 27,
+    "Robinia": 1,
+    "Rosa": 1,
+    "Salix": 1,
+    "Sassafras": 1,
+    "Sideroxylon": 1,
+    "Symphoricarpos": 1,
+    "Taxus": 1,
+    "Thuja": 2,
+    "Tilia": 1,
+    "Triadica": 1,
+    "Tsuga": 2,
+    "Ulmus": 5,
+    "Unknown": 2
+  },
+  "idx_to_count": {
+    "0": 1651,
+    "1": 6635,
+    "2": 8,
+    "3": 60,
+    "4": 545,
+    "5": 7,
+    "6": 1794,
+    "7": 45,
+    "8": 34,
+    "9": 17,
+    "10": 184,
+    "11": 566,
+    "12": 1013,
+    "13": 11,
+    "14": 1045,
+    "15": 81,
+    "16": 114,
+    "17": 46,
+    "18": 860,
+    "19": 957,
+    "20": 39,
+    "21": 6,
+    "22": 9,
+    "23": 119,
+    "24": 39,
+    "25": 106,
+    "26": 301,
+    "27": 38,
+    "28": 942,
+    "29": 1152,
+    "30": 56,
+    "31": 195,
+    "32": 21,
+    "33": 55,
+    "34": 185,
+    "35": 677,
+    "36": 30,
+    "37": 331,
+    "38": 2598,
+    "39": 26,
+    "40": 6600,
+    "41": 24,
+    "42": 133,
+    "43": 1527,
+    "44": 222,
+    "45": 3311,
+    "46": 7479,
+    "47": 114,
+    "48": 14,
+    "49": 6,
+    "50": 82,
+    "51": 12,
+    "52": 45,
+    "53": 86,
+    "54": 132,
+    "55": 45,
+    "56": 49,
+    "57": 4728,
+    "58": 617,
+    "59": 147
+  },
+  "metadata": {
+    "taxonomic_level": "genus",
+    "num_classes": 60,
+    "total_samples": 47971,
+    "source_csv": "combined_dataset.csv",
+    "description": "NEON tree species classification - Genus level",
+    "label_format": "Genus names (first word of scientific name)",
+    "extraction_method": "genus = species_name.split()[0]"
+  }
+}
