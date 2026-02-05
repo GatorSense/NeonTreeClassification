@@ -182,6 +182,12 @@ def main():
         "--model_type", type=str, default="simple", help="Model architecture type"
     )
     parser.add_argument(
+        "--model_variant",
+        type=str,
+        default=None,
+        help="Model variant (e.g., 'vit_b_16', 'vit_l_16' for ViT models)",
+    )
+    parser.add_argument(
         "--num_classes",
         type=int,
         default=None,
@@ -236,6 +242,23 @@ def main():
         "--use_balanced_sampler",
         action="store_true",
         help="Use WeightedRandomSampler for balanced class sampling (recommended for imbalanced datasets)",
+    )
+    
+    # Image size arguments
+    parser.add_argument(
+        "--rgb_size",
+        type=int,
+        default=224,
+        help="RGB image size (single value for square images, e.g., 224 for 224x224). Default matches ImageNet pretraining.",
+    )
+    
+    # Normalization arguments
+    parser.add_argument(
+        "--rgb_norm_method",
+        type=str,
+        default="imagenet",
+        choices=["none", "0_1", "imagenet"],
+        help="RGB normalization method: 'imagenet' (recommended for pretrained models), '0_1' (simple [0,1] range), 'none'",
     )
 
     # Reproducibility arguments
@@ -293,8 +316,10 @@ def main():
     worker_init_fn.base_seed = args.seed
 
     # Set up experiment name (auto-generate)
+    # Include model_variant and taxonomic_level to avoid collisions in array jobs
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    experiment_name = f"{args.modality}_{args.model_type}_{args.batch_size}_{timestamp}"
+    model_name = args.model_variant if args.model_variant else args.model_type
+    experiment_name = f"{args.modality}_{model_name}_{args.taxonomic_level}_{timestamp}"
 
     # Set up output directory with dynamic naming within provided path
     if args.output_dir is None:
@@ -324,6 +349,8 @@ def main():
         external_test_csv_path=args.external_test_csv,  # External test support
         external_test_hdf5_path=args.external_test_hdf5,  # External test support
         modalities=[args.modality],
+        rgb_size=(args.rgb_size, args.rgb_size),  # Image size for RGB
+        rgb_norm_method=args.rgb_norm_method,  # Normalization for RGB (imagenet for pretrained models)
         taxonomic_level=args.taxonomic_level,  # Species or genus level
         use_balanced_sampler=args.use_balanced_sampler,  # Balanced sampling
         split_method=args.split_method,
@@ -381,6 +408,11 @@ def main():
 
     # Create classifier based on modality
     if args.modality == "rgb":
+        # Prepare model kwargs
+        model_kwargs = {}
+        if args.model_variant is not None:
+            model_kwargs["model_variant"] = args.model_variant
+        
         classifier = RGBClassifier(
             model_type=args.model_type,
             num_classes=args.num_classes,
@@ -389,6 +421,8 @@ def main():
             scheduler=args.scheduler,
             weight_decay=args.weight_decay,
             log_images=True,  # Enable image logging for RGB
+            idx_to_label=datamodule.full_dataset.idx_to_label,  # For DeepForest CropModel compatibility
+            **model_kwargs,  # Pass model variant for ViT and other models
         )
     elif args.modality == "hsi":
         classifier = HSIClassifier(

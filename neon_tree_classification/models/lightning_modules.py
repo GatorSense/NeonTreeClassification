@@ -24,6 +24,7 @@ from pytorch_lightning.loggers import CometLogger
 from .rgb_models import create_rgb_model
 from .hsi_models import create_hsi_model
 from .lidar_models import create_lidar_model
+from torchvision import transforms
 
 
 class BaseTreeClassifier(L.LightningModule):
@@ -234,6 +235,11 @@ class BaseTreeClassifier(L.LightningModule):
         # Convert predictions and labels to numpy
         predictions = torch.cat(self.test_predictions).cpu().numpy()
         true_labels = torch.cat(self.test_labels).cpu().numpy()
+        
+        # Debug: Print total test samples
+        print(f"\n📊 Test Set Statistics:")
+        print(f"   Total test samples: {len(true_labels)}")
+        print(f"   Predictions collected from {len(self.test_predictions)} batches")
 
         # Get species names and labels
         species_names, display_labels, label_ints_for_report = (
@@ -241,6 +247,7 @@ class BaseTreeClassifier(L.LightningModule):
         )
 
         print(f"\nGenerating Test Results Summary in: {results_dir}")
+        print(f"   Number of classes in test set: {len(label_ints_for_report)}")
 
         # Generate and save confusion matrix
         try:
@@ -389,6 +396,7 @@ class RGBClassifier(BaseTreeClassifier):
         weight_decay: float = 1e-4,
         class_weights: Optional[torch.Tensor] = None,
         log_images: bool = False,
+        idx_to_label: Optional[Dict[int, str]] = None,
         **model_kwargs,
     ):
         """
@@ -403,6 +411,8 @@ class RGBClassifier(BaseTreeClassifier):
             weight_decay: Weight decay for optimizer
             class_weights: Optional class weights for imbalanced datasets
             log_images: Whether to log sample images during validation
+            idx_to_label: Optional label mapping {0: "Species1", 1: "Species2", ...}
+                         for DeepForest CropModel compatibility
             **model_kwargs: Additional arguments for model creation
         """
         # Create RGB model
@@ -422,10 +432,59 @@ class RGBClassifier(BaseTreeClassifier):
 
         self.log_images = log_images
         self.logged_images_this_epoch = False
+        
+        # Set label_dict for DeepForest CropModel compatibility
+        if idx_to_label is not None:
+            self.set_label_dict(idx_to_label)
+        else:
+            self.label_dict = None
+            self.numeric_to_label_dict = None
 
     def _extract_modality_data(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
         """Extract RGB data from batch."""
         return batch["rgb"]
+    
+    def normalize(self):
+        """Return normalization transform for DeepForest CropModel compatibility.
+        
+        Returns ImageNet normalization transform as used in training.
+        This method is required for DeepForest CropModel integration.
+        
+        Returns:
+            torchvision.transforms.Normalize object
+        """
+        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    
+    def set_label_dict(self, idx_to_label: Dict[int, str]):
+        """Set label dictionaries from idx_to_label mapping.
+        
+        Creates both label_dict and numeric_to_label_dict as required by DeepForest CropModel.
+        
+        Args:
+            idx_to_label: Dictionary mapping class indices to class names
+        """
+        # label_dict: {"Class1": 0, "Class2": 1} - used by DeepForest for class lookup
+        self.label_dict = {label: idx for idx, label in idx_to_label.items()}
+        # numeric_to_label_dict: {0: "Class1", 1: "Class2"} - used by DeepForest for prediction output
+        self.numeric_to_label_dict = dict(idx_to_label)
+    
+    def get_label_dict(self) -> Optional[Dict[str, int]]:
+        """Get label dictionary in DeepForest CropModel format.
+        
+        Returns:
+            Dictionary mapping class names to indices, or None if not set
+        """
+        return self.label_dict
+
+    def on_save_checkpoint(self, checkpoint):
+        """Save label dictionaries to checkpoint for DeepForest CropModel compatibility."""
+        checkpoint["label_dict"] = self.label_dict
+        checkpoint["numeric_to_label_dict"] = self.numeric_to_label_dict
+
+    def on_load_checkpoint(self, checkpoint):
+        """Restore label dictionaries from checkpoint."""
+        self.label_dict = checkpoint.get("label_dict", None)
+        self.numeric_to_label_dict = checkpoint.get("numeric_to_label_dict", None)
 
     def validation_step(
         self, batch: Dict[str, torch.Tensor], batch_idx: int
@@ -488,6 +547,7 @@ class HSIClassifier(BaseTreeClassifier):
     Lightning module for hyperspectral-based tree species classification.
 
     Includes HSI-specific evaluation features like spectral analysis.
+    Supports multi-output models (e.g., Hang2020) with deep supervision.
     """
 
     def __init__(
@@ -500,13 +560,14 @@ class HSIClassifier(BaseTreeClassifier):
         scheduler: str = "plateau",
         weight_decay: float = 1e-4,
         class_weights: Optional[torch.Tensor] = None,
+        aux_loss_weight: float = 0.4,
         **model_kwargs,
     ):
         """
         Initialize HSI classifier.
 
         Args:
-            model_type: Type of HSI model ("simple", "spectral_cnn", "hypernet")
+            model_type: Type of HSI model ("simple", "spectral_cnn", "hypernet", "hang2020")
             num_bands: Number of hyperspectral bands
             num_classes: Number of tree species classes
             learning_rate: Learning rate for optimizer
@@ -514,6 +575,7 @@ class HSIClassifier(BaseTreeClassifier):
             scheduler: Scheduler type ('plateau', 'cosine', 'step')
             weight_decay: Weight decay for optimizer
             class_weights: Optional class weights for imbalanced datasets
+            aux_loss_weight: Weight for auxiliary losses in multi-output models (0.0-1.0)
             **model_kwargs: Additional arguments for model creation
         """
         # Create HSI model
@@ -535,10 +597,82 @@ class HSIClassifier(BaseTreeClassifier):
         )
 
         self.num_bands = num_bands
+        self.aux_loss_weight = aux_loss_weight
+        
+        # Detect if model supports multi-output training (e.g., Hang2020)
+        self.is_multi_output = hasattr(self.model, 'forward_with_aux')
+        
+        if self.is_multi_output:
+            print(f"✓ Multi-output model detected - using deep supervision with aux_weight={aux_loss_weight}")
 
     def _extract_modality_data(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
         """Extract HSI data from batch."""
         return batch["hsi"]
+    
+    def _shared_step(self, batch: Dict[str, torch.Tensor], stage: str):
+        """
+        Shared step with support for multi-output models.
+        
+        Overrides base class to handle models with auxiliary outputs (e.g., Hang2020).
+        """
+        # Extract labels
+        targets = batch["species_idx"]
+        inputs = self._extract_modality_data(batch)
+        
+        # Check if we're training/validating and using multi-output model
+        if self.is_multi_output and stage in ["train", "val"]:
+            # Multi-output forward pass (Hang2020 style)
+            final_logits, aux_logits = self.model.forward_with_aux(inputs)
+            
+            # Main loss on final output
+            if self.class_weights is not None:
+                main_loss = F.cross_entropy(
+                    final_logits, targets, weight=self.class_weights.to(self.device)
+                )
+            else:
+                main_loss = F.cross_entropy(final_logits, targets)
+            
+            # Auxiliary losses (deep supervision on intermediate outputs)
+            aux_losses = []
+            for aux_logit in aux_logits:
+                if self.class_weights is not None:
+                    aux_loss = F.cross_entropy(
+                        aux_logit, targets, weight=self.class_weights.to(self.device)
+                    )
+                else:
+                    aux_loss = F.cross_entropy(aux_logit, targets)
+                aux_losses.append(aux_loss)
+            
+            # Combined loss: main + weighted average of auxiliary losses
+            total_aux_loss = torch.stack(aux_losses).mean()
+            loss = main_loss + self.aux_loss_weight * total_aux_loss
+            
+            # Log individual losses
+            if stage == "train":
+                self.log("train_main_loss", main_loss, on_epoch=True)
+                self.log("train_aux_loss", total_aux_loss, on_epoch=True)
+            elif stage == "val":
+                self.log("val_main_loss", main_loss, on_epoch=True)
+                self.log("val_aux_loss", total_aux_loss, on_epoch=True)
+            
+            # Use final logits for predictions
+            logits = final_logits
+        else:
+            # Single-output forward pass (standard models or test stage)
+            logits = self.forward(inputs)
+            
+            # Compute loss
+            if self.class_weights is not None:
+                loss = F.cross_entropy(
+                    logits, targets, weight=self.class_weights.to(self.device)
+                )
+            else:
+                loss = F.cross_entropy(logits, targets)
+        
+        # Get predictions
+        preds = torch.argmax(logits, dim=1)
+        
+        return loss, preds, targets, logits
 
     def test_step(self, batch: Dict[str, torch.Tensor], batch_idx: int) -> torch.Tensor:
         """Test step with HSI-specific analysis."""

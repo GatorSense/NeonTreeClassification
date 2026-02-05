@@ -6,9 +6,9 @@ A comprehensive toolkit for multi-modal tree species classification using NEON e
 
 This repository aims to provide an end-to-end solution for tree species classification:
 
-- [x] **Dataset**: Ready-to-use multi-modal tree crown dataset with 167 species
+- [x] **Dataset**: Ready-to-use multi-modal tree crown dataset with 167 species. It's curated using the code in preprocessing directory in this repo.
 - [ ] **Data Processing**: Tools for downloading and processing raw NEON data products
-- [ ] **Classification Models**: Pre-trained models and training pipelines
+- [ ] **Classification Models**: Pre-trained models and training pipelines (Ongoing. ETA End of Feb 2026)
 - [ ] **DeepForest Integration**: Automated crown detection and classification workflow
 
 ## What's Available Now

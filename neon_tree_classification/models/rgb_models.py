@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from typing import Optional
+import torchvision.models as models
 
 
 class SimpleRGBNet(nn.Module):
@@ -253,6 +254,98 @@ class ResidualBlock(nn.Module):
         return out
 
 
+class ViTRGB(nn.Module):
+    """
+    Vision Transformer (ViT) for RGB tree crown classification.
+    
+    Uses pretrained ViT models from torchvision with custom classification head.
+    Supports ViT-B/16, ViT-B/32, ViT-L/16, and ViT-L/32 architectures.
+    """
+    
+    def __init__(
+        self, 
+        num_classes: int = 10, 
+        model_variant: str = "vit_b_16",
+        pretrained: bool = True
+    ):
+        """
+        Initialize ViT model.
+        
+        Args:
+            num_classes: Number of tree species classes
+            model_variant: ViT variant - 'vit_b_16' (base/16), 'vit_b_32' (base/32),
+                          'vit_l_16' (large/16), 'vit_l_32' (large/32)
+            pretrained: Whether to use ImageNet pretrained weights
+        """
+        super().__init__()
+        self.num_classes = num_classes
+        self.model_variant = model_variant
+        
+        # Load pretrained ViT model
+        if model_variant == "vit_b_16":
+            weights = models.ViT_B_16_Weights.IMAGENET1K_V1 if pretrained else None
+            self.vit = models.vit_b_16(weights=weights)
+            hidden_dim = 768
+        elif model_variant == "vit_b_32":
+            weights = models.ViT_B_32_Weights.IMAGENET1K_V1 if pretrained else None
+            self.vit = models.vit_b_32(weights=weights)
+            hidden_dim = 768
+        elif model_variant == "vit_l_16":
+            weights = models.ViT_L_16_Weights.IMAGENET1K_V1 if pretrained else None
+            self.vit = models.vit_l_16(weights=weights)
+            hidden_dim = 1024
+        elif model_variant == "vit_l_32":
+            weights = models.ViT_L_32_Weights.IMAGENET1K_V1 if pretrained else None
+            self.vit = models.vit_l_32(weights=weights)
+            hidden_dim = 1024
+        else:
+            raise ValueError(
+                f"Unknown ViT variant: {model_variant}. "
+                f"Choose from: vit_b_16, vit_b_32, vit_l_16, vit_l_32"
+            )
+        
+        # Replace classification head
+        self.vit.heads = nn.Linear(hidden_dim, num_classes)
+        self.hidden_dim = hidden_dim
+    
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass.
+        
+        Args:
+            x: RGB tensor [batch_size, 3, height, width]
+        
+        Returns:
+            Class logits [batch_size, num_classes]
+        """
+        return self.vit(x)
+    
+    def extract_features(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Extract features before classification head.
+        
+        Args:
+            x: RGB tensor [batch_size, 3, height, width]
+        
+        Returns:
+            Feature vector [batch_size, hidden_dim]
+        """
+        # Extract features (without classification head)
+        x = self.vit._process_input(x)
+        n = x.shape[0]
+        
+        # Expand class token to batch
+        batch_class_token = self.vit.class_token.expand(n, -1, -1)
+        x = torch.cat([batch_class_token, x], dim=1)
+        
+        # Pass through transformer encoder
+        x = self.vit.encoder(x)
+        
+        # Use class token representation
+        x = x[:, 0]
+        return x
+
+
 # Factory function for easy model creation
 def create_rgb_model(
     model_type: str = "simple", num_classes: int = 10, **kwargs
@@ -261,9 +354,9 @@ def create_rgb_model(
     Factory function to create RGB models.
 
     Args:
-        model_type: Type of model ("simple", "resnet")
+        model_type: Type of model ("simple", "resnet", "vit")
         num_classes: Number of output classes
-        **kwargs: Additional model-specific arguments
+        **kwargs: Additional model-specific arguments (e.g., model_variant for ViT)
 
     Returns:
         RGB classification model
@@ -272,5 +365,10 @@ def create_rgb_model(
         return SimpleRGBNet(num_classes=num_classes, **kwargs)
     elif model_type == "resnet":
         return ResNetRGB(num_classes=num_classes, **kwargs)
+    elif model_type == "vit":
+        return ViTRGB(num_classes=num_classes, **kwargs)
     else:
-        raise ValueError(f"Unknown RGB model type: {model_type}")
+        raise ValueError(
+            f"Unknown RGB model type: {model_type}. "
+            f"Choose from: simple, resnet, vit"
+        )

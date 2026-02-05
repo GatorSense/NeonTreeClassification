@@ -44,7 +44,7 @@ class NeonCrownDataset(Dataset):
         site_filter: Optional[List[str]] = None,
         year_filter: Optional[List[int]] = None,
         # Target sizes for training (required for consistent batching)
-        rgb_size: Tuple[int, int] = (128, 128),
+        rgb_size: Tuple[int, int] = (224, 224),  # Matches ImageNet pretraining
         hsi_size: Tuple[int, int] = (12, 12),
         lidar_size: Tuple[int, int] = (12, 12),
         # Resize methods (optimized for speed)
@@ -52,7 +52,7 @@ class NeonCrownDataset(Dataset):
         hsi_resize_mode: str = "nearest",  # Changed to nearest for speed
         lidar_resize_mode: str = "nearest",  # Changed to nearest for speed
         # Normalization methods (performance-first defaults)
-        rgb_norm_method: str = "0_1",  # Simple division, fastest
+        rgb_norm_method: str = "imagenet",  # ImageNet normalization for pretrained models
         hsi_norm_method: str = "per_sample",  # Per-sample z-score, faster than per_pixel
         lidar_norm_method: str = "height",  # Simple max scaling, fastest
         # Custom transforms (optional, per-modality)

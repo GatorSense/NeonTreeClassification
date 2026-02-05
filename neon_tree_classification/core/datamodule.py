@@ -60,13 +60,13 @@ class NeonCrownDataModule(LightningDataModule):
         species_filter: Optional[List[str]] = None,
         site_filter: Optional[List[str]] = None,
         year_filter: Optional[List[int]] = None,
-        rgb_size: Tuple[int, int] = (128, 128),
+        rgb_size: Tuple[int, int] = (224, 224),  # Matches ImageNet pretraining
         hsi_size: Tuple[int, int] = (12, 12),
         lidar_size: Tuple[int, int] = (12, 12),
         rgb_resize_mode: str = "nearest",
         hsi_resize_mode: str = "nearest",
         lidar_resize_mode: str = "nearest",
-        rgb_norm_method: str = "0_1",
+        rgb_norm_method: str = "imagenet",  # ImageNet normalization for pretrained models
         hsi_norm_method: str = "per_sample",
         lidar_norm_method: str = "height",
         custom_transforms: Optional[Dict[str, Callable]] = None,
