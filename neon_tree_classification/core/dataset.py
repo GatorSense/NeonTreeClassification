@@ -250,8 +250,10 @@ class NeonCrownDataset(Dataset):
         # If the first mapping key is a species code (all uppercase, short), it's species-level
         # If it's a genus name (capitalized, longer), it's genus-level
         sample_label = next(iter(mapping_labels)) if mapping_labels else ""
-        is_genus_mapping = sample_label and sample_label[0].isupper() and sample_label[1:].islower()
-        
+        is_genus_mapping = (
+            sample_label and sample_label[0].isupper() and sample_label[1:].islower()
+        )
+
         if is_genus_mapping:
             # Genus-level mapping: validate that all species have extractable genus
             if "species_name" not in self.data.columns:
@@ -259,17 +261,21 @@ class NeonCrownDataset(Dataset):
                     "Genus-level mapping detected but 'species_name' column not found in data. "
                     "Cannot extract genus from species names."
                 )
-            
+
             # Extract genera from species names and check they're all in mapping
-            data_genera = set(self.data["species_name"].apply(lambda x: str(x).split()[0]).unique())
+            data_genera = set(
+                self.data["species_name"].apply(lambda x: str(x).split()[0]).unique()
+            )
             missing_genera = data_genera - mapping_labels
             if missing_genera:
                 raise ValueError(
                     f"Genera extracted from dataset not found in external label mapping: {sorted(missing_genera)}. "
                     f"External mapping has: {sorted(mapping_labels)}"
                 )
-            
-            print(f"✓ Genus-level validation passed: All {len(data_genera)} genera found in mapping")
+
+            print(
+                f"✓ Genus-level validation passed: All {len(data_genera)} genera found in mapping"
+            )
         else:
             # Species-level mapping: check species codes
             missing_in_mapping = data_species - mapping_labels

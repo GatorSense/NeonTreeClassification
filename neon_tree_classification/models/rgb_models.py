@@ -257,20 +257,20 @@ class ResidualBlock(nn.Module):
 class ViTRGB(nn.Module):
     """
     Vision Transformer (ViT) for RGB tree crown classification.
-    
+
     Uses pretrained ViT models from torchvision with custom classification head.
     Supports ViT-B/16, ViT-B/32, ViT-L/16, and ViT-L/32 architectures.
     """
-    
+
     def __init__(
-        self, 
-        num_classes: int = 10, 
+        self,
+        num_classes: int = 10,
         model_variant: str = "vit_b_16",
-        pretrained: bool = True
+        pretrained: bool = True,
     ):
         """
         Initialize ViT model.
-        
+
         Args:
             num_classes: Number of tree species classes
             model_variant: ViT variant - 'vit_b_16' (base/16), 'vit_b_32' (base/32),
@@ -280,7 +280,7 @@ class ViTRGB(nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.model_variant = model_variant
-        
+
         # Load pretrained ViT model
         if model_variant == "vit_b_16":
             weights = models.ViT_B_16_Weights.IMAGENET1K_V1 if pretrained else None
@@ -303,44 +303,44 @@ class ViTRGB(nn.Module):
                 f"Unknown ViT variant: {model_variant}. "
                 f"Choose from: vit_b_16, vit_b_32, vit_l_16, vit_l_32"
             )
-        
+
         # Replace classification head
         self.vit.heads = nn.Linear(hidden_dim, num_classes)
         self.hidden_dim = hidden_dim
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass.
-        
+
         Args:
             x: RGB tensor [batch_size, 3, height, width]
-        
+
         Returns:
             Class logits [batch_size, num_classes]
         """
         return self.vit(x)
-    
+
     def extract_features(self, x: torch.Tensor) -> torch.Tensor:
         """
         Extract features before classification head.
-        
+
         Args:
             x: RGB tensor [batch_size, 3, height, width]
-        
+
         Returns:
             Feature vector [batch_size, hidden_dim]
         """
         # Extract features (without classification head)
         x = self.vit._process_input(x)
         n = x.shape[0]
-        
+
         # Expand class token to batch
         batch_class_token = self.vit.class_token.expand(n, -1, -1)
         x = torch.cat([batch_class_token, x], dim=1)
-        
+
         # Pass through transformer encoder
         x = self.vit.encoder(x)
-        
+
         # Use class token representation
         x = x[:, 0]
         return x

@@ -556,12 +556,12 @@ class NeonCrownDataModule(LightningDataModule):
         # Compute sampler if balanced sampling is enabled
         sampler = None
         shuffle = True
-        
+
         if self.use_balanced_sampler:
             print("⚖️  Using WeightedRandomSampler for balanced class sampling")
             sampler = self._create_weighted_sampler()
             shuffle = False  # Can't use shuffle with sampler
-        
+
         return DataLoader(
             self.train_dataset,
             batch_size=self.batch_size,
@@ -612,10 +612,10 @@ class NeonCrownDataModule(LightningDataModule):
     def _create_weighted_sampler(self) -> WeightedRandomSampler:
         """
         Create WeightedRandomSampler for balanced class sampling.
-        
+
         Computes sample weights inversely proportional to class frequency,
         so rare classes are sampled more often and common classes less often.
-        
+
         Returns:
             WeightedRandomSampler for training dataset
         """
@@ -640,29 +640,30 @@ class NeonCrownDataModule(LightningDataModule):
 
         # Count class frequencies
         class_counts = sample_labels.value_counts().to_dict()
-        
+
         # Compute weight for each class (inverse frequency)
         num_samples = len(sample_labels)
         class_weights = {
             cls: num_samples / count for cls, count in class_counts.items()
         }
-        
+
         # Assign weight to each sample based on its class
         sample_weights = [class_weights[label] for label in sample_labels]
         sample_weights = torch.DoubleTensor(sample_weights)
-        
+
         # Create sampler
         sampler = WeightedRandomSampler(
             weights=sample_weights,
             num_samples=len(sample_weights),
-            replacement=True  # Sample with replacement to oversample rare classes
+            replacement=True,  # Sample with replacement to oversample rare classes
         )
-        
-        print(f"   Created sampler for {len(sample_weights)} samples")
-        print(f"   Sample weight range: {sample_weights.min():.3f} - {sample_weights.max():.3f}")
-        
-        return sampler
 
+        print(f"   Created sampler for {len(sample_weights)} samples")
+        print(
+            f"   Sample weight range: {sample_weights.min():.3f} - {sample_weights.max():.3f}"
+        )
+
+        return sampler
 
     def get_class_weights(self) -> torch.Tensor:
         """
@@ -723,17 +724,17 @@ class NeonCrownDataModule(LightningDataModule):
     def _create_genus_label_mapping(self) -> Dict[str, int]:
         """
         Create genus-level label mapping from species names in the CSV.
-        
+
         Extracts genus (first word) from species_name column.
-        
+
         Returns:
             Dictionary mapping genus name to integer index
         """
         import warnings
-        
+
         # Load CSV to extract species names
         df = pd.read_csv(self.csv_path)
-        
+
         # Apply any filters that were specified
         if self.dataset_params.get("species_filter"):
             df = df[df["species"].isin(self.dataset_params["species_filter"])]
@@ -741,14 +742,14 @@ class NeonCrownDataModule(LightningDataModule):
             df = df[df["site"].isin(self.dataset_params["site_filter"])]
         if self.dataset_params.get("year_filter"):
             df = df[df["year"].isin(self.dataset_params["year_filter"])]
-        
+
         # Extract genus from species_name (first word)
         df["genus"] = df["species_name"].apply(lambda x: str(x).split()[0])
-        
+
         # Get unique genera and create mapping
         unique_genera = sorted(df["genus"].unique())
         label_to_idx = {genus: idx for idx, genus in enumerate(unique_genera)}
-        
+
         # Validate genus names and warn about edge cases
         non_alpha_genera = [g for g in unique_genera if not g.isalpha()]
         if non_alpha_genera:
@@ -758,7 +759,7 @@ class NeonCrownDataModule(LightningDataModule):
                 f"Run 'python processing/misc/inspect_labels.py' to review. "
                 f"To exclude, use: species_filter=[...]"
             )
-        
+
         # Check for known family names
         known_families = {"Pinaceae", "Rosaceae", "Fabaceae", "Asteraceae"}
         found_families = set(unique_genera) & known_families
@@ -769,7 +770,7 @@ class NeonCrownDataModule(LightningDataModule):
                 f"These represent unidentified species within that family. "
                 f"See docs/taxonomic_levels.md for more information."
             )
-        
+
         return label_to_idx
 
     def get_dataset_info(self) -> Dict[str, Any]:

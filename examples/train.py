@@ -243,7 +243,7 @@ def main():
         action="store_true",
         help="Use WeightedRandomSampler for balanced class sampling (recommended for imbalanced datasets)",
     )
-    
+
     # Image size arguments
     parser.add_argument(
         "--rgb_size",
@@ -251,7 +251,7 @@ def main():
         default=224,
         help="RGB image size (single value for square images, e.g., 224 for 224x224). Default matches ImageNet pretraining.",
     )
-    
+
     # Normalization arguments
     parser.add_argument(
         "--rgb_norm_method",
@@ -412,7 +412,7 @@ def main():
         model_kwargs = {}
         if args.model_variant is not None:
             model_kwargs["model_variant"] = args.model_variant
-        
+
         classifier = RGBClassifier(
             model_type=args.model_type,
             num_classes=args.num_classes,

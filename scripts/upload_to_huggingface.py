@@ -32,7 +32,7 @@ def load_lightning_checkpoint(checkpoint_path: str) -> Dict[str, Any]:
     """Load a Lightning checkpoint and extract relevant data."""
     print(f"📂 Loading checkpoint: {checkpoint_path}")
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    
+
     return {
         "state_dict": checkpoint["state_dict"],
         "hyper_parameters": checkpoint.get("hyper_parameters", {}),
@@ -42,9 +42,11 @@ def load_lightning_checkpoint(checkpoint_path: str) -> Dict[str, Any]:
     }
 
 
-def extract_model_state_dict(lightning_state_dict: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+def extract_model_state_dict(
+    lightning_state_dict: Dict[str, torch.Tensor]
+) -> Dict[str, torch.Tensor]:
     """Extract just the model weights from Lightning's state_dict.
-    
+
     Lightning prefixes model weights with 'model.' - we need to remove this
     for compatibility with standard PyTorch loading.
     """
@@ -56,7 +58,7 @@ def extract_model_state_dict(lightning_state_dict: Dict[str, torch.Tensor]) -> D
         else:
             # Keep non-model keys (metrics, etc.) - but typically we skip these
             pass
-    
+
     return model_state_dict
 
 
@@ -100,9 +102,9 @@ def create_model_card(
     repo_name: str,
 ) -> str:
     """Create README.md model card for HuggingFace."""
-    
+
     model_name = model_variant if model_variant else model_type
-    
+
     card = f"""---
 license: mit
 library_name: pytorch
@@ -215,39 +217,41 @@ def upload_to_huggingface(
     dry_run: bool = False,
 ):
     """Upload model to HuggingFace Hub."""
-    
+
     try:
         from huggingface_hub import HfApi, create_repo
         from safetensors.torch import save_file
     except ImportError:
         print("❌ Please install: pip install huggingface_hub safetensors")
         sys.exit(1)
-    
+
     # Load checkpoint
     checkpoint_data = load_lightning_checkpoint(checkpoint_path)
-    
+
     # Validate label_dict exists
     if not checkpoint_data["label_dict"]:
-        print("❌ Checkpoint missing label_dict! Was the model trained with idx_to_label?")
+        print(
+            "❌ Checkpoint missing label_dict! Was the model trained with idx_to_label?"
+        )
         sys.exit(1)
-    
+
     num_classes = len(checkpoint_data["label_dict"])
     print(f"✅ Found {num_classes} classes in label_dict")
-    
+
     # Extract model weights
     model_state_dict = extract_model_state_dict(checkpoint_data["state_dict"])
     print(f"✅ Extracted {len(model_state_dict)} model parameters")
-    
+
     # Create config
     config = create_config(
         checkpoint_data, model_type, model_variant, taxonomic_level, num_classes
     )
-    
+
     # Create model card
     model_card = create_model_card(
         model_type, model_variant, taxonomic_level, num_classes, repo_name
     )
-    
+
     if dry_run:
         print("\n🔍 DRY RUN - Would upload:")
         print(f"   Repository: {repo_name}")
@@ -260,43 +264,44 @@ def upload_to_huggingface(
         print(f"   - label_dict sample: {dict(list(config['label_dict'].items())[:3])}")
         print(f"   - normalize: {config['normalize']}")
         return
-    
+
     # Create temp directory for files
     import tempfile
+
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
-        
+
         # Save safetensors
         safetensors_path = tmpdir / "model.safetensors"
         save_file(model_state_dict, str(safetensors_path))
         print(f"✅ Saved safetensors: {safetensors_path.stat().st_size / 1e6:.1f} MB")
-        
+
         # Save config
         config_path = tmpdir / "config.json"
         with open(config_path, "w") as f:
             json.dump(config, f, indent=2)
         print(f"✅ Saved config.json")
-        
+
         # Save model card
         readme_path = tmpdir / "README.md"
         with open(readme_path, "w") as f:
             f.write(model_card)
         print(f"✅ Saved README.md")
-        
+
         # Upload to HuggingFace
         api = HfApi()
-        
+
         # Create repo
         print(f"\n🚀 Creating/updating repo: {repo_name}")
         create_repo(repo_name, exist_ok=True, private=private)
-        
+
         # Upload files
         api.upload_folder(
             folder_path=str(tmpdir),
             repo_id=repo_name,
             commit_message=f"Upload {model_type} {taxonomic_level} model",
         )
-        
+
         print(f"\n✅ Successfully uploaded to: https://huggingface.co/{repo_name}")
 
 
@@ -304,7 +309,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="Upload NeonTreeClassification models to HuggingFace Hub"
     )
-    
+
     parser.add_argument(
         "--checkpoint",
         type=str,
@@ -347,9 +352,9 @@ def main():
         action="store_true",
         help="Don't actually upload, just show what would be uploaded",
     )
-    
+
     args = parser.parse_args()
-    
+
     upload_to_huggingface(
         checkpoint_path=args.checkpoint,
         repo_name=args.repo_name,

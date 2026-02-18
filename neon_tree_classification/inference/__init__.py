@@ -24,11 +24,11 @@ from .preprocessing import preprocess_image, prepare_tensor
 from .utils import load_label_mapping, format_predictions
 
 __all__ = [
-    'TreeClassifier',
-    'preprocess_image',
-    'prepare_tensor',
-    'load_label_mapping',
-    'format_predictions',
+    "TreeClassifier",
+    "preprocess_image",
+    "prepare_tensor",
+    "load_label_mapping",
+    "format_predictions",
 ]
 
-__version__ = '1.0.0'
+__version__ = "1.0.0"
