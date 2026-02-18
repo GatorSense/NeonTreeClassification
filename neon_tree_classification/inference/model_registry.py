@@ -16,7 +16,8 @@ AVAILABLE_MODELS = {
         "num_classes": 167,
         "architecture": "resnet",
         "modality": "rgb",
-        "input_size": (128, 128),
+        "input_size": (224, 224),
+        "norm_method": "imagenet",
         "accuracy": 75.88,  # Test accuracy percentage
         "parameters": "11.2M",
         "url": None,  # To be added when uploaded to HuggingFace
@@ -28,7 +29,8 @@ AVAILABLE_MODELS = {
         "num_classes": 60,
         "architecture": "resnet",
         "modality": "rgb",
-        "input_size": (128, 128),
+        "input_size": (224, 224),
+        "norm_method": "imagenet",
         "accuracy": 72.24,  # Test accuracy percentage
         "parameters": "11.2M",
         "url": None,  # To be added when uploaded to HuggingFace

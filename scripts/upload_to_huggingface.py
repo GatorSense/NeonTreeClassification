@@ -235,6 +235,13 @@ def upload_to_huggingface(
         )
         sys.exit(1)
 
+    if not checkpoint_data["numeric_to_label_dict"]:
+        print(
+            "❌ Checkpoint missing numeric_to_label_dict! "
+            "Was the model trained with idx_to_label?"
+        )
+        sys.exit(1)
+
     num_classes = len(checkpoint_data["label_dict"])
     print(f"✅ Found {num_classes} classes in label_dict")
 

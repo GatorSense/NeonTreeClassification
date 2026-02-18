@@ -8,12 +8,6 @@ import torch
 import warnings
 from pathlib import Path
 from typing import Union, List, Dict, Optional, Tuple
-import sys
-
-# Add project root to path for imports
-project_root = Path(__file__).parent.parent.parent
-if str(project_root) not in sys.path:
-    sys.path.insert(0, str(project_root))
 
 from neon_tree_classification.models.rgb_models import create_rgb_model
 from .preprocessing import preprocess_image, preprocess_image_batch
@@ -61,7 +55,8 @@ class TreeClassifier:
         label_mapping: Dict,
         taxonomic_level: str,
         device: str = None,
-        input_size: Tuple[int, int] = (128, 128),
+        input_size: Tuple[int, int] = (224, 224),
+        norm_method: str = "imagenet",
     ):
         """
         Initialize tree classifier.
@@ -72,11 +67,13 @@ class TreeClassifier:
             taxonomic_level: 'species' or 'genus'
             device: Device for inference ('cpu', 'cuda', 'mps'). Auto-detected if None.
             input_size: Input image size (width, height)
+            norm_method: Normalization method ('imagenet' or '0_1')
         """
         self.model = model
         self.label_mapping = label_mapping
         self.taxonomic_level = taxonomic_level
         self.input_size = input_size
+        self.norm_method = norm_method
 
         # Auto-detect device if not specified
         if device is None:
@@ -176,7 +173,8 @@ class TreeClassifier:
             label_mapping=label_mapping,
             taxonomic_level=taxonomic_level,
             device=device,
-            input_size=(128, 128),
+            input_size=(224, 224),
+            norm_method="imagenet",
         )
 
     @classmethod
@@ -240,7 +238,7 @@ class TreeClassifier:
             image_input,
             target_size=self.input_size,
             normalize=True,
-            norm_method="0_1",
+            norm_method=self.norm_method,
             return_tensor=True,
             add_batch_dim=True,
             device=self.device,
@@ -299,7 +297,7 @@ class TreeClassifier:
                 batch,
                 target_size=self.input_size,
                 normalize=True,
-                norm_method="0_1",
+                norm_method=self.norm_method,
                 device=self.device,
             )
 

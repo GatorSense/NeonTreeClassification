@@ -63,7 +63,7 @@ datamodule = NeonCrownDataModule(
 ### Step 1: Run Label Inspection
 
 ```bash
-python processing/misc/inspect_labels.py
+python processing/misc/inspect_labels.py --csv_path path/to/your/labels.csv
 ```
 
 This will show:
@@ -103,20 +103,22 @@ Pinus         6,600 samples    19 species    (Pines)
 If you want taxonomically pure genus-level training:
 
 ```python
-# Option A: Filter specific species codes
+# Option A: Include only specific species codes (all others are excluded)
 datamodule = NeonCrownDataModule(
     ...,
     taxonomic_level="genus",
-    species_filter=["PINACE"],  # Exclude Pinaceae (will filter BEFORE genus extraction)
+    species_filter=["PSMEM", "TSHE"],  # Include only these USDA codes
 )
 
-# Option B: Filter after inspecting
-# See inspect_labels.py output for USDA codes to exclude
-species_to_exclude = ["PINACE", "2PLANT", "2PLANT-S"]  # Example
+# Option B: Build an inclusion list after inspecting
+# See inspect_labels.py output for USDA codes present in your data
+# species_filter keeps only rows WHERE species IS IN the list
+all_codes = [...]  # full list from inspect_labels.py
+species_to_include = [c for c in all_codes if c not in ["PINACE", "2PLANT", "2PLANT-S"]]
 datamodule = NeonCrownDataModule(
     ...,
     taxonomic_level="genus",
-    species_filter=species_to_exclude,
+    species_filter=species_to_include,
 )
 ```
 
@@ -175,13 +177,16 @@ trainer.fit(model, datamodule)
 ### With Filtering
 
 ```python
-# Clean genus-level training (exclude edge cases)
+# Clean genus-level training (include only true genera, omit edge cases)
+# species_filter keeps only rows where species code is in the list
+all_codes = [...]  # get from inspect_labels.py output
+clean_codes = [c for c in all_codes if c not in ["PINACE"]]  # drop Pinaceae
 datamodule = NeonCrownDataModule(
     csv_path="data/metadata/combined_dataset.csv",
     hdf5_path="data/combined_dataset.h5",
     modalities=["rgb"],
     taxonomic_level="genus",
-    species_filter=["PINACE"],  # Exclude Pinaceae family
+    species_filter=clean_codes,  # include all except Pinaceae
     batch_size=64,
 )
 # Now training on 59 true genera only
@@ -262,7 +267,7 @@ These represent unidentified species within that family.
 See docs/taxonomic_levels.md for more information.
 ```
 
-**These are informational** - training will proceed normally. Filter if desired using `species_filter`.
+**These are informational** - training will proceed normally. To exclude them, build an inclusion list with all other codes and pass it to `species_filter` (which keeps only species in the list).
 
 ## FAQ
 
@@ -277,7 +282,7 @@ See docs/taxonomic_levels.md for more information.
 **Q: What about Pinaceae?**
 - It's a family name, not genus, but only 26 samples (0.05%)
 - Keep it (recommended): Represents "unidentified conifer" class
-- Filter it: Use `species_filter=["PINACE"]` if you need taxonomic purity
+- Exclude it: Build an inclusion list of all codes except `"PINACE"` and pass to `species_filter`
 
 **Q: How do I know how many classes I have?**
 ```python
@@ -304,7 +309,7 @@ Expected accuracy ranges on NEON combined dataset (RGB only, ResNet50):
 
 ## Additional Resources
 
-- **Data inspection**: `python processing/misc/inspect_labels.py`
+- **Data inspection**: `python processing/misc/inspect_labels.py --csv_path path/to/labels.csv`
 - **Training examples**: `examples/train.py`
 - **Model architectures**: `docs/training.md`
 - **Data processing**: `docs/processing.md`

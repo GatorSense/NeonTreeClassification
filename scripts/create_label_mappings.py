@@ -6,13 +6,12 @@ Extracts species-level (167 classes) and genus-level (60 classes) label mappings
 from the training CSV and saves them as JSON files for use in inference.
 
 Usage:
-    python scripts/create_label_mappings.py
+    python scripts/create_label_mappings.py --csv_path path/to/labels.csv
 """
 
 import json
 import pandas as pd
 from pathlib import Path
-from collections import OrderedDict
 import sys
 
 # Add project root to path

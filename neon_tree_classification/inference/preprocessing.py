@@ -82,7 +82,7 @@ def load_image(
     )
 
 
-def resize_image(image: Image.Image, target_size: tuple = (128, 128)) -> Image.Image:
+def resize_image(image: Image.Image, target_size: tuple = (224, 224)) -> Image.Image:
     """
     Resize image to target size.
 
@@ -97,14 +97,17 @@ def resize_image(image: Image.Image, target_size: tuple = (128, 128)) -> Image.I
 
 
 def normalize_rgb(
-    image: Union[Image.Image, np.ndarray], method: str = "0_1"
+    image: Union[Image.Image, np.ndarray], method: str = "imagenet"
 ) -> np.ndarray:
     """
-    Normalize RGB image to 0-1 range.
+    Normalize RGB image.
 
     Args:
         image: PIL Image or numpy array (H, W, 3) in 0-255 range
-        method: Normalization method ('0_1' or 'imagenet')
+        method: Normalization method:
+            - '0_1': scales pixel values to [0, 1]
+            - 'imagenet': scales to [0, 1] then standardizes using
+              ImageNet mean/std (produces values outside [0, 1])
 
     Returns:
         Normalized numpy array (H, W, 3) as float32
@@ -161,9 +164,9 @@ def prepare_tensor(
 
 def preprocess_image(
     image_input: Union[str, Path, Image.Image, np.ndarray, torch.Tensor],
-    target_size: tuple = (128, 128),
+    target_size: tuple = (224, 224),
     normalize: bool = True,
-    norm_method: str = "0_1",
+    norm_method: str = "imagenet",
     return_tensor: bool = True,
     add_batch_dim: bool = True,
     device: str = "cpu",
@@ -221,9 +224,9 @@ def preprocess_image(
 # Convenience functions for batch processing
 def preprocess_image_batch(
     image_inputs: list,
-    target_size: tuple = (128, 128),
+    target_size: tuple = (224, 224),
     normalize: bool = True,
-    norm_method: str = "0_1",
+    norm_method: str = "imagenet",
     device: str = "cpu",
 ) -> torch.Tensor:
     """

@@ -756,8 +756,8 @@ class NeonCrownDataModule(LightningDataModule):
             warnings.warn(
                 f"Found non-alphabetic genus names: {non_alpha_genera}. "
                 f"These may be unidentified species or family names. "
-                f"Run 'python processing/misc/inspect_labels.py' to review. "
-                f"To exclude, use: species_filter=[...]"
+                f"Run 'python processing/misc/inspect_labels.py --csv_path <path>' to review. "
+                f"To include only specific species, use: species_filter=[...]"
             )
 
         # Check for known family names

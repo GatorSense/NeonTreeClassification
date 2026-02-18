@@ -397,6 +397,7 @@ class RGBClassifier(BaseTreeClassifier):
         class_weights: Optional[torch.Tensor] = None,
         log_images: bool = False,
         idx_to_label: Optional[Dict[int, str]] = None,
+        rgb_norm_method: str = "imagenet",
         **model_kwargs,
     ):
         """
@@ -413,6 +414,7 @@ class RGBClassifier(BaseTreeClassifier):
             log_images: Whether to log sample images during validation
             idx_to_label: Optional label mapping {0: "Species1", 1: "Species2", ...}
                          for DeepForest CropModel compatibility
+            rgb_norm_method: Normalization method used during training ('imagenet' or '0_1')
             **model_kwargs: Additional arguments for model creation
         """
         # Create RGB model
@@ -432,6 +434,7 @@ class RGBClassifier(BaseTreeClassifier):
 
         self.log_images = log_images
         self.logged_images_this_epoch = False
+        self.rgb_norm_method = rgb_norm_method
 
         # Set label_dict for DeepForest CropModel compatibility
         if idx_to_label is not None:
@@ -445,17 +448,24 @@ class RGBClassifier(BaseTreeClassifier):
         return batch["rgb"]
 
     def normalize(self):
-        """Return normalization transform for DeepForest CropModel compatibility.
+        """Return normalization transform matching the training configuration.
 
-        Returns ImageNet normalization transform as used in training.
-        This method is required for DeepForest CropModel integration.
+        Required for DeepForest CropModel integration. Returns a transform
+        consistent with the rgb_norm_method used during training.
 
         Returns:
             torchvision.transforms.Normalize object
         """
-        return transforms.Normalize(
-            mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-        )
+        if self.rgb_norm_method == "imagenet":
+            return transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            )
+        elif self.rgb_norm_method == "0_1":
+            # Scale to [0,1]: equivalent to dividing by 255 in ToTensor,
+            # represented as zero-mean, unit-std (no-op standardization)
+            return transforms.Normalize(mean=[0.0, 0.0, 0.0], std=[1.0, 1.0, 1.0])
+        else:
+            raise ValueError(f"Unknown rgb_norm_method: {self.rgb_norm_method}")
 
     def set_label_dict(self, idx_to_label: Dict[int, str]):
         """Set label dictionaries from idx_to_label mapping.
