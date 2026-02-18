@@ -43,7 +43,7 @@ def load_lightning_checkpoint(checkpoint_path: str) -> Dict[str, Any]:
 
 
 def extract_model_state_dict(
-    lightning_state_dict: Dict[str, torch.Tensor]
+    lightning_state_dict: Dict[str, torch.Tensor],
 ) -> Dict[str, torch.Tensor]:
     """Extract just the model weights from Lightning's state_dict.
 

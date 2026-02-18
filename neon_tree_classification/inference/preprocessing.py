@@ -12,7 +12,7 @@ from PIL import Image
 
 
 def load_image(
-    image_input: Union[str, Path, Image.Image, np.ndarray, torch.Tensor]
+    image_input: Union[str, Path, Image.Image, np.ndarray, torch.Tensor],
 ) -> Image.Image:
     """
     Load image from various input formats and convert to PIL Image.

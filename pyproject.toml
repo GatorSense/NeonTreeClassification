@@ -160,3 +160,8 @@ exclude = [
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
+
+[dependency-groups]
+dev = [
+    "black>=25.0.0",
+]

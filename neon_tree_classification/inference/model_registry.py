@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Dict, Optional, List
 import warnings
 
-
 # Model catalog - will be populated with HuggingFace URLs later
 AVAILABLE_MODELS = {
     "resnet_species": {
